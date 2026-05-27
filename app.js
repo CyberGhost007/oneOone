@@ -451,7 +451,7 @@ function renderSupervisorHistory(member) {
         </div>
       </td>
       <td class="metric-cell">${escapeHtml(item.kpi)}</td>
-      <td class="data-cell">${escapeHtml(item.data)}</td>
+      <td class="data-cell">${renderDataValue(item.kpi, item.data)}</td>
       <td>
         <select class="task-status" aria-label="Status for ${escapeHtml(item.goal)}">
           <option value="">Select status...</option>
@@ -507,7 +507,7 @@ function renderSupervisorCurrentGoals(member) {
         <input class="kpi-field" value="${escapeHtml(goal.kpi)}" placeholder="KPI" aria-label="KPI for current goal ${index + 1}" />
       </td>
       <td class="data-cell">
-        <input class="data-field" value="${escapeHtml(goal.data)}" placeholder="Data" aria-label="Data for current goal ${index + 1}" />
+        <input class="${dataFieldClass(goal.kpi, goal.data)}" value="${escapeHtml(goal.data)}" placeholder="Data" aria-label="Data for current goal ${index + 1}" />
       </td>
       <td>
         ${renderAgentResponseSummary(goal)}
@@ -542,6 +542,7 @@ function renderSupervisorCurrentGoals(member) {
 
     kpiInput.addEventListener("input", (event) => {
       goal.kpi = event.target.value;
+      applyDataInputTone(dataInput, goal.kpi, goal.data);
       updateMemberReviewStatus(member);
       persistDraft();
       renderTeamList();
@@ -552,6 +553,7 @@ function renderSupervisorCurrentGoals(member) {
 
     dataInput.addEventListener("input", (event) => {
       goal.data = event.target.value;
+      applyDataInputTone(event.target, goal.kpi, goal.data);
       updateMemberReviewStatus(member);
       persistDraft();
       renderTeamList();
@@ -602,7 +604,7 @@ function renderAgentHistory(member) {
         </div>
       </td>
       <td class="metric-cell">${escapeHtml(item.kpi)}</td>
-      <td class="data-cell">${escapeHtml(item.data)}</td>
+      <td class="data-cell">${renderDataValue(item.kpi, item.data)}</td>
       <td>${item.status ? `<span class="mini-pill">${escapeHtml(item.status)}</span>` : `<em>Not reviewed yet</em>`}</td>
       <td>${item.notes ? escapeHtml(item.notes) : `<em>No comments yet</em>`}</td>
       <td>${escapeHtml(item.timeline)}</td>
@@ -626,7 +628,7 @@ function renderAgentCurrentGoals(member) {
       </td>
       <td class="${goal.timeline ? "" : "placeholder-text"}">${escapeHtml(goal.timeline || "Not set")}</td>
       <td class="metric-cell ${goal.kpi ? "" : "placeholder-text"}">${escapeHtml(goal.kpi || "Not set")}</td>
-      <td class="data-cell ${goal.data ? "" : "placeholder-text"}">${escapeHtml(goal.data || "Not set")}</td>
+      <td class="data-cell">${renderDataValue(goal.kpi, goal.data)}</td>
       <td>
         ${renderAgentResponseSummary(goal, "agent")}
       </td>
@@ -1123,6 +1125,108 @@ function reportIcon(tone) {
   if (tone === "purple") return "◌";
   if (tone === "orange") return "!";
   return "∑";
+}
+
+function renderDataValue(kpi, data) {
+  const value = String(data ?? "").trim();
+  if (!value) {
+    return `<span class="placeholder-text">Not set</span>`;
+  }
+
+  const tone = performanceTone(kpi, value);
+  return `<span class="data-value ${tone ? `data-value-${tone}` : ""}">${escapeHtml(value)}</span>`;
+}
+
+function dataFieldClass(kpi, data) {
+  const tone = performanceTone(kpi, data);
+  return `data-field${tone ? ` data-field-${tone}` : ""}`;
+}
+
+function applyDataInputTone(input, kpi, data) {
+  input.className = dataFieldClass(kpi, data);
+}
+
+function performanceTone(kpi, data) {
+  const value = parseMetricNumber(data);
+  if (value == null) return "";
+
+  const metric = String(kpi ?? "").toLowerCase();
+  const isPercent = String(data ?? "").includes("%");
+
+  if (metric.includes("aht") || metric.includes("handling time") || metric.includes("resolution time")) {
+    if (value <= 8) return "green";
+    if (value <= 8.5) return "amber";
+    return "red";
+  }
+
+  if (metric.includes("escalation")) {
+    if (value <= 10) return "green";
+    if (value <= 18) return "amber";
+    return "red";
+  }
+
+  if (metric.includes("backlog")) {
+    if (value <= 20) return "green";
+    if (value <= 35) return "amber";
+    return "red";
+  }
+
+  if (metric.includes("bill") || metric.includes("volume") || metric.includes("productivity")) {
+    if (value >= 1300) return "green";
+    if (value >= 1200) return "amber";
+    return "red";
+  }
+
+  if (metric.includes("accuracy")) {
+    if (value >= 96) return "green";
+    if (value >= 93) return "amber";
+    return "red";
+  }
+
+  if (metric.includes("quality")) {
+    if (value >= 94) return "green";
+    if (value >= 90) return "amber";
+    return "red";
+  }
+
+  if (metric.includes("utilization")) {
+    if (value >= 90) return "green";
+    if (value >= 85) return "amber";
+    return "red";
+  }
+
+  if (metric.includes("csat")) {
+    if (value >= 90) return "green";
+    if (value >= 85) return "amber";
+    return "red";
+  }
+
+  if (metric.includes("adherence") || metric.includes("schedule")) {
+    if (value >= 92) return "green";
+    if (value >= 88) return "amber";
+    return "red";
+  }
+
+  if (metric.includes("training")) {
+    if (value >= 80) return "green";
+    if (value >= 60) return "amber";
+    return "red";
+  }
+
+  if (isPercent) {
+    if (value >= 95) return "green";
+    if (value >= 85) return "amber";
+    return "red";
+  }
+
+  if (value >= 1000) return "green";
+  if (value >= 500) return "amber";
+  return "red";
+}
+
+function parseMetricNumber(data) {
+  const match = String(data ?? "").match(/-?\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : null;
 }
 
 function responseCountLabel(member) {
