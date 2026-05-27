@@ -528,6 +528,37 @@ button {
   line-height: 1.35;
 }
 
+.assessment-section {
+  max-width: 920px;
+}
+
+.overall-comment-field,
+.overall-comment-readonly {
+  width: 100%;
+  min-height: 118px;
+  border: 1px solid #d6dbe4;
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--ink);
+  padding: 14px 16px;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.overall-comment-field {
+  resize: vertical;
+}
+
+.overall-comment-readonly {
+  white-space: pre-wrap;
+}
+
+.overall-comment-readonly.empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
 .table-wrap {
   max-width: 100%;
   overflow: auto;

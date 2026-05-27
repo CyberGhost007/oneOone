@@ -107,6 +107,8 @@ const seedMembers = [
         agentRespondedAt: "",
       },
     ],
+    overallComment:
+      "Sarah is tracking well against the month plan. Keep the focus on accuracy while improving handoff consistency.",
     lastUpdated: "May 10, 2026 5:30 AM",
   },
   {
@@ -138,6 +140,7 @@ const seedMembers = [
       { goal: "", timeline: "", kpi: "AHT", data: "7.8 min", agentResponse: "", agentNote: "", agentRespondedAt: "" },
       { goal: "", timeline: "", kpi: "Utilization %", data: "92%", agentResponse: "", agentNote: "", agentRespondedAt: "" },
     ],
+    overallComment: "",
     lastUpdated: "May 8, 2026 5:30 AM",
   },
   {
@@ -159,6 +162,7 @@ const seedMembers = [
       { goal: "", timeline: "", kpi: "AHT", data: "8.1 min", agentResponse: "", agentNote: "", agentRespondedAt: "" },
       { goal: "", timeline: "", kpi: "Quality", data: "90%", agentResponse: "", agentNote: "", agentRespondedAt: "" },
     ],
+    overallComment: "",
     lastUpdated: "May 9, 2026 10:12 AM",
   },
   {
@@ -180,6 +184,7 @@ const seedMembers = [
       { goal: "", timeline: "", kpi: "CSAT", data: "88%", agentResponse: "", agentNote: "", agentRespondedAt: "" },
       { goal: "", timeline: "", kpi: "Escalations", data: "14", agentResponse: "", agentNote: "", agentRespondedAt: "" },
     ],
+    overallComment: "",
     lastUpdated: "May 6, 2026 9:45 AM",
   },
   {
@@ -201,6 +206,7 @@ const seedMembers = [
       { goal: "", timeline: "", kpi: "Adherence", data: "91%", agentResponse: "", agentNote: "", agentRespondedAt: "" },
       { goal: "", timeline: "", kpi: "Backlog", data: "32", agentResponse: "", agentNote: "", agentRespondedAt: "" },
     ],
+    overallComment: "",
     lastUpdated: "May 7, 2026 2:15 PM",
   },
 ];
@@ -229,6 +235,7 @@ const els = {
   reviewStatus: document.querySelector("#reviewStatus"),
   historyBody: document.querySelector("#historyBody"),
   currentGoalsBody: document.querySelector("#currentGoalsBody"),
+  overallComment: document.querySelector("#overallComment"),
   addGoalButton: document.querySelector("#addGoalButton"),
   saveDraftButton: document.querySelector("#saveDraftButton"),
   completeReviewButton: document.querySelector("#completeReviewButton"),
@@ -245,6 +252,7 @@ const els = {
   agentReviewStatus: document.querySelector("#agentReviewStatus"),
   agentHistoryBody: document.querySelector("#agentHistoryBody"),
   agentCurrentGoalsBody: document.querySelector("#agentCurrentGoalsBody"),
+  agentOverallComment: document.querySelector("#agentOverallComment"),
   agentLastUpdated: document.querySelector("#agentLastUpdated"),
   responseModal: document.querySelector("#responseModal"),
   responseForm: document.querySelector("#responseForm"),
@@ -297,6 +305,7 @@ function normalizeState(rawState) {
     return {
       ...structuredClone(seedById[seedMember.id]),
       ...member,
+      overallComment: member.overallComment ?? seedMember.overallComment ?? "",
       history: normalizeHistory(member.history, seedMember.history),
       currentGoals: normalizeCurrentGoals(member.currentGoals, seedMember.currentGoals),
     };
@@ -437,6 +446,7 @@ function renderSupervisorReview() {
   els.reviewSubtitle.textContent = `One-on-One Review - ${reviewPeriod}`;
   els.reviewStatus.textContent = statusLabel(member.status);
   els.reviewStatus.className = `status-pill ${member.status}`;
+  els.overallComment.value = member.overallComment ?? "";
   els.lastUpdated.textContent = `Last updated: ${member.lastUpdated}`;
 
   renderSupervisorHistory(member);
@@ -604,10 +614,17 @@ function renderAgentReview() {
   els.agentReviewSubtitle.textContent = "Supervisor updates and agent responses stay in sync";
   els.agentReviewStatus.textContent = statusLabel(member.status);
   els.agentReviewStatus.className = `status-pill ${member.status}`;
+  renderAgentOverallComment(member);
   els.agentLastUpdated.textContent = `Last updated: ${member.lastUpdated}`;
 
   renderAgentHistory(member);
   renderAgentCurrentGoals(member);
+}
+
+function renderAgentOverallComment(member) {
+  const comment = (member.overallComment ?? "").trim();
+  els.agentOverallComment.textContent = comment || "No overall comment yet.";
+  els.agentOverallComment.classList.toggle("empty", !comment);
 }
 
 function renderAgentHistory(member) {
@@ -1333,6 +1350,16 @@ function saveDraft() {
   showToast("Draft saved.");
 }
 
+function handleOverallCommentInput(event) {
+  const member = selectedSupervisorMember();
+  member.overallComment = event.target.value;
+  updateMemberReviewStatus(member);
+  persistDraft();
+  renderTeamList();
+  renderAgentReview();
+  renderSummary();
+}
+
 function switchView(view) {
   state.activeView = view;
   persistDraft();
@@ -1449,8 +1476,9 @@ function updateMemberReviewStatus(member) {
     (goal) =>
       goal.goal.trim() || goal.actionPlan.trim() || goal.timeline.trim() || goal.kpi.trim() || goal.data.trim(),
   );
+  const hasOverallComment = Boolean((member.overallComment ?? "").trim());
   const hasAgentResponses = member.currentGoals.some((goal) => goal.agentResponse);
-  member.status = hasHistoryProgress || hasCurrentGoals || hasAgentResponses ? "in-progress" : "pending";
+  member.status = hasHistoryProgress || hasCurrentGoals || hasOverallComment || hasAgentResponses ? "in-progress" : "pending";
 }
 
 function statusLabel(status) {
@@ -1541,6 +1569,7 @@ document.querySelectorAll("[data-report-download]").forEach((button) => {
 });
 
 els.addGoalButton.addEventListener("click", addGoal);
+els.overallComment.addEventListener("input", handleOverallCommentInput);
 els.saveDraftButton.addEventListener("click", saveDraft);
 els.completeReviewButton.addEventListener("click", completeReview);
 els.responseForm.addEventListener("submit", submitAgentResponse);
