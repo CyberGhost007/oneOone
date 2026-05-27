@@ -241,7 +241,6 @@ const els = {
   agentReviewTitle: document.querySelector("#agentReviewTitle"),
   agentReviewSubtitle: document.querySelector("#agentReviewSubtitle"),
   agentReviewStatus: document.querySelector("#agentReviewStatus"),
-  agentReviewResponseCount: document.querySelector("#agentReviewResponseCount"),
   agentHistoryBody: document.querySelector("#agentHistoryBody"),
   agentCurrentGoalsBody: document.querySelector("#agentCurrentGoalsBody"),
   agentLastUpdated: document.querySelector("#agentLastUpdated"),
@@ -588,7 +587,6 @@ function renderAgentReview() {
   els.agentReviewSubtitle.textContent = "Supervisor updates and agent responses stay in sync";
   els.agentReviewStatus.textContent = statusLabel(member.status);
   els.agentReviewStatus.className = `status-pill ${member.status}`;
-  els.agentReviewResponseCount.textContent = responseCountLabel(member);
   els.agentLastUpdated.textContent = `Last updated: ${member.lastUpdated}`;
 
   renderAgentHistory(member);
