@@ -236,7 +236,6 @@ const els = {
   agentName: document.querySelector("#agentName"),
   agentEmail: document.querySelector("#agentEmail"),
   agentProfileStatus: document.querySelector("#agentProfileStatus"),
-  agentSupervisorUpdateCount: document.querySelector("#agentSupervisorUpdateCount"),
   agentReviewTitle: document.querySelector("#agentReviewTitle"),
   agentReviewSubtitle: document.querySelector("#agentReviewSubtitle"),
   agentReviewStatus: document.querySelector("#agentReviewStatus"),
@@ -580,7 +579,6 @@ function renderAgentReview() {
   els.agentEmail.textContent = member.email;
   els.agentProfileStatus.textContent = statusLabel(member.status);
   els.agentProfileStatus.className = `profile-stat ${member.status}`;
-  els.agentSupervisorUpdateCount.textContent = supervisorUpdateCountLabel(member);
   els.agentReviewTitle.textContent = `One-on-One Review - ${reviewPeriod}`;
   els.agentReviewSubtitle.textContent = "Supervisor updates and agent responses stay in sync";
   els.agentReviewStatus.textContent = statusLabel(member.status);
