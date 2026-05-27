@@ -223,7 +223,6 @@ const els = {
   reviewName: document.querySelector("#reviewName"),
   reviewSubtitle: document.querySelector("#reviewSubtitle"),
   reviewStatus: document.querySelector("#reviewStatus"),
-  supervisorResponseCount: document.querySelector("#supervisorResponseCount"),
   historyBody: document.querySelector("#historyBody"),
   currentGoalsBody: document.querySelector("#currentGoalsBody"),
   addGoalButton: document.querySelector("#addGoalButton"),
@@ -436,7 +435,6 @@ function renderSupervisorReview() {
   els.reviewSubtitle.textContent = `One-on-One Review - ${reviewPeriod}`;
   els.reviewStatus.textContent = statusLabel(member.status);
   els.reviewStatus.className = `status-pill ${member.status}`;
-  els.supervisorResponseCount.textContent = responseCountLabel(member);
   els.lastUpdated.textContent = `Last updated: ${member.lastUpdated}`;
 
   renderSupervisorHistory(member);
