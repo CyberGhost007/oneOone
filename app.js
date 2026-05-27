@@ -1191,67 +1191,67 @@ function performanceTone(kpi, data) {
 
   if (metric.includes("aht") || metric.includes("handling time") || metric.includes("resolution time")) {
     if (value <= 8) return "green";
-    if (value <= 8.5) return "amber";
+    if (value <= 8.1) return "amber";
     return "red";
   }
 
   if (metric.includes("escalation")) {
     if (value <= 10) return "green";
-    if (value <= 18) return "amber";
+    if (value <= 12) return "amber";
     return "red";
   }
 
   if (metric.includes("backlog")) {
     if (value <= 20) return "green";
-    if (value <= 35) return "amber";
+    if (value <= 28) return "amber";
     return "red";
   }
 
   if (metric.includes("bill") || metric.includes("volume") || metric.includes("productivity")) {
     if (value >= 1300) return "green";
-    if (value >= 1200) return "amber";
+    if (value >= 1250) return "amber";
     return "red";
   }
 
   if (metric.includes("accuracy")) {
-    if (value >= 96) return "green";
-    if (value >= 93) return "amber";
+    if (value >= 96.5) return "green";
+    if (value >= 95) return "amber";
     return "red";
   }
 
   if (metric.includes("quality")) {
     if (value >= 94) return "green";
-    if (value >= 90) return "amber";
+    if (value >= 92) return "amber";
     return "red";
   }
 
   if (metric.includes("utilization")) {
-    if (value >= 90) return "green";
-    if (value >= 85) return "amber";
+    if (value >= 92) return "green";
+    if (value >= 89) return "amber";
     return "red";
   }
 
   if (metric.includes("csat")) {
     if (value >= 90) return "green";
-    if (value >= 85) return "amber";
+    if (value >= 89) return "amber";
     return "red";
   }
 
   if (metric.includes("adherence") || metric.includes("schedule")) {
     if (value >= 92) return "green";
-    if (value >= 88) return "amber";
+    if (value >= 90) return "amber";
     return "red";
   }
 
   if (metric.includes("training")) {
-    if (value >= 80) return "green";
-    if (value >= 60) return "amber";
+    if (value >= 85) return "green";
+    if (value >= 70) return "amber";
     return "red";
   }
 
   if (isPercent) {
     if (value >= 95) return "green";
-    if (value >= 85) return "amber";
+    if (value >= 90) return "amber";
     return "red";
   }
 
