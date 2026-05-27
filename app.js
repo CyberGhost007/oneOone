@@ -757,10 +757,10 @@ function getReportMetrics() {
 
 function renderReportKpis(metrics) {
   const cards = [
-    { label: "Total reviews", value: metrics.totalReviews, tone: "blue", detail: `${metrics.completedReviews} complete` },
-    { label: "Completion rate", value: `${metrics.completionRate}%`, tone: "green", detail: `${metrics.pendingReviews} pending` },
-    { label: "Agent responses", value: metrics.agentResponses, tone: "purple", detail: `${metrics.responseTotals.noResponse} open` },
-    { label: "Needs attention", value: metrics.needsAttention, tone: "orange", detail: "Pending or flagged" },
+    { label: "Total reviews", value: metrics.totalReviews, tone: "blue" },
+    { label: "Completion rate", value: `${metrics.completionRate}%`, tone: "green" },
+    { label: "Agent responses", value: metrics.agentResponses, tone: "purple" },
+    { label: "Needs attention", value: metrics.needsAttention, tone: "orange" },
   ];
 
   els.reportKpis.innerHTML = cards
@@ -771,7 +771,6 @@ function renderReportKpis(metrics) {
           <span>
             <small>${card.label}</small>
             <strong>${card.value}</strong>
-            <em>${card.detail}</em>
           </span>
         </article>
       `,
