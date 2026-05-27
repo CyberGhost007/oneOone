@@ -68,6 +68,7 @@ const seedMembers = [
     currentGoals: [
       {
         goal: "Keep bill processing volume steady while maintaining accuracy",
+        actionPlan: "Track daily bill volume and audit exceptions before handoff",
         timeline: "End of May",
         kpi: "Overall Bills",
         data: "1250",
@@ -77,6 +78,7 @@ const seedMembers = [
       },
       {
         goal: "Hold accuracy above 96% on complex billing cases",
+        actionPlan: "Review complex billing cases and document recurring edge cases",
         timeline: "End of May",
         kpi: "Accuracy",
         data: "96.5%",
@@ -86,6 +88,7 @@ const seedMembers = [
       },
       {
         goal: "Reduce average handling time without rushing documentation",
+        actionPlan: "Use approved macros and keep documentation concise",
         timeline: "Mid-May",
         kpi: "AHT",
         data: "8.2 min",
@@ -95,6 +98,7 @@ const seedMembers = [
       },
       {
         goal: "Improve utilization through tighter shift handoffs",
+        actionPlan: "Confirm shift handoff checklist at every transition",
         timeline: "End of May",
         kpi: "Utilization %",
         data: "87%",
@@ -327,8 +331,9 @@ function normalizeHistory(history, fallbackHistory) {
 
 function normalizeCurrentGoals(currentGoals, fallbackGoals) {
   const items = Array.isArray(currentGoals) && currentGoals.length ? currentGoals : fallbackGoals;
-  return items.map((goal) => ({
+  return items.map((goal, index) => ({
     goal: goal.goal ?? "",
+    actionPlan: goal.actionPlan ?? fallbackGoals?.[index]?.actionPlan ?? "",
     timeline: goal.timeline ?? "",
     kpi: normalizeEditableMetric(goal.kpi, "New KPI"),
     data: normalizeEditableMetric(goal.data, "Enter data"),
@@ -501,6 +506,9 @@ function renderSupervisorCurrentGoals(member) {
         </div>
       </td>
       <td>
+        <textarea rows="1" class="action-plan-field" placeholder="Action plan" aria-label="Action plan for current goal ${index + 1}">${escapeHtml(goal.actionPlan)}</textarea>
+      </td>
+      <td>
         <input class="timeline-field" value="${escapeHtml(goal.timeline)}" placeholder="Timeline" aria-label="Timeline for current goal ${index + 1}" />
       </td>
       <td class="metric-cell">
@@ -520,11 +528,22 @@ function renderSupervisorCurrentGoals(member) {
     `;
 
     const goalInput = row.querySelector(".goal-field");
+    const actionPlanInput = row.querySelector(".action-plan-field");
     const timelineInput = row.querySelector(".timeline-field");
     const kpiInput = row.querySelector(".kpi-field");
     const dataInput = row.querySelector(".data-field");
     goalInput.addEventListener("input", (event) => {
       goal.goal = event.target.value;
+      autoSizeField(event.target);
+      updateMemberReviewStatus(member);
+      persistDraft();
+      renderTeamList();
+      renderAgentReview();
+      renderSummary();
+    });
+
+    actionPlanInput.addEventListener("input", (event) => {
+      goal.actionPlan = event.target.value;
       autoSizeField(event.target);
       updateMemberReviewStatus(member);
       persistDraft();
@@ -626,6 +645,7 @@ function renderAgentCurrentGoals(member) {
           <span class="${goal.goal ? "" : "placeholder-text"}">${escapeHtml(goal.goal || "Goal to be discussed")}</span>
         </div>
       </td>
+      <td class="${goal.actionPlan ? "" : "placeholder-text"}">${escapeHtml(goal.actionPlan || "Not set")}</td>
       <td class="${goal.timeline ? "" : "placeholder-text"}">${escapeHtml(goal.timeline || "Not set")}</td>
       <td class="metric-cell ${goal.kpi ? "" : "placeholder-text"}">${escapeHtml(goal.kpi || "Not set")}</td>
       <td class="data-cell">${renderDataValue(goal.kpi, goal.data)}</td>
@@ -1257,6 +1277,7 @@ function renderAgentResponseSummary(goal, view = "supervisor") {
 function currentGoalSummary(goal) {
   const title = goal.goal.trim() || goal.kpi.trim() || "Current planning item";
   const details = [];
+  if (goal.actionPlan.trim()) details.push(goal.actionPlan.trim());
   if (goal.kpi.trim()) details.push(goal.kpi.trim());
   if (goal.data.trim()) details.push(goal.data.trim());
   if (goal.timeline.trim()) details.push(`due ${goal.timeline.trim()}`);
@@ -1267,6 +1288,7 @@ function addGoal() {
   const member = selectedSupervisorMember();
   member.currentGoals.push({
     goal: "",
+    actionPlan: "",
     timeline: "",
     kpi: "",
     data: "",
@@ -1286,11 +1308,12 @@ function completeReview() {
   const member = selectedSupervisorMember();
   const missingHistory = member.history.some((item) => !item.status || !item.notes.trim());
   const missingCurrentGoal = member.currentGoals.some(
-    (goal) => !goal.goal.trim() || !goal.timeline.trim() || !goal.kpi.trim() || !goal.data.trim(),
+    (goal) =>
+      !goal.goal.trim() || !goal.actionPlan.trim() || !goal.timeline.trim() || !goal.kpi.trim() || !goal.data.trim(),
   );
 
   if (missingHistory || missingCurrentGoal) {
-    showToast("Complete past follow-up and all current planning goal, timeline, KPI, and data fields first.");
+    showToast("Complete past follow-up and all current planning goal, action plan, timeline, KPI, and data fields first.");
     return;
   }
 
@@ -1423,7 +1446,8 @@ function updateMemberReviewStatus(member) {
 
   const hasHistoryProgress = member.history.some((item) => item.status || item.notes.trim());
   const hasCurrentGoals = member.currentGoals.some(
-    (goal) => goal.goal.trim() || goal.timeline.trim() || goal.kpi.trim() || goal.data.trim(),
+    (goal) =>
+      goal.goal.trim() || goal.actionPlan.trim() || goal.timeline.trim() || goal.kpi.trim() || goal.data.trim(),
   );
   const hasAgentResponses = member.currentGoals.some((goal) => goal.agentResponse);
   member.status = hasHistoryProgress || hasCurrentGoals || hasAgentResponses ? "in-progress" : "pending";
@@ -1474,7 +1498,7 @@ function resetTableScroll() {
 
 function autoSizeGoalFields() {
   requestAnimationFrame(() => {
-    document.querySelectorAll(".goal-field").forEach(autoSizeField);
+    document.querySelectorAll(".goal-field, .action-plan-field").forEach(autoSizeField);
   });
 }
 

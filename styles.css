@@ -361,6 +361,7 @@ button {
 
 .review-panel {
   min-width: 0;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: #ffffff;
@@ -528,7 +529,8 @@ button {
 }
 
 .table-wrap {
-  overflow-x: auto;
+  max-width: 100%;
+  overflow: auto;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: #ffffff;
@@ -546,7 +548,7 @@ table {
 }
 
 .current-table {
-  min-width: 1040px;
+  min-width: 0;
 }
 
 .agent-history-table {
@@ -554,7 +556,7 @@ table {
 }
 
 .agent-current-table {
-  min-width: 980px;
+  min-width: 0;
 }
 
 th {
@@ -623,11 +625,11 @@ td:last-child {
 }
 
 .current-table th:nth-child(1) {
-  width: 33%;
+  width: 26%;
 }
 
 .current-table th:nth-child(2) {
-  width: 14%;
+  width: 18%;
 }
 
 .current-table th:nth-child(3) {
@@ -635,14 +637,18 @@ td:last-child {
 }
 
 .current-table th:nth-child(4) {
-  width: 9%;
+  width: 10%;
 }
 
 .current-table th:nth-child(5) {
-  width: 27%;
+  width: 8%;
 }
 
 .current-table th:nth-child(6) {
+  width: 22%;
+}
+
+.current-table th:nth-child(7) {
   width: 54px;
 }
 
@@ -668,24 +674,28 @@ td:last-child {
 }
 
 .agent-current-table th:nth-child(1) {
-  width: 30%;
+  width: 25%;
 }
 
 .agent-current-table th:nth-child(2) {
-  width: 14%;
+  width: 18%;
 }
 
-.agent-current-table th:nth-child(3),
-.agent-current-table th:nth-child(4) {
+.agent-current-table th:nth-child(3) {
   width: 12%;
 }
 
+.agent-current-table th:nth-child(4),
 .agent-current-table th:nth-child(5) {
-  width: 22%;
+  width: 10%;
 }
 
 .agent-current-table th:nth-child(6) {
-  width: 10%;
+  width: 17%;
+}
+
+.agent-current-table th:nth-child(7) {
+  width: 8%;
 }
 
 .numbered-cell {
@@ -737,7 +747,8 @@ textarea {
   padding: 10px;
 }
 
-textarea.goal-field {
+textarea.goal-field,
+textarea.action-plan-field {
   min-height: 42px;
   resize: none;
   overflow: hidden;
@@ -1644,11 +1655,11 @@ td em,
   }
 
   .current-table {
-    min-width: 940px;
+    min-width: 1120px;
   }
 
   .agent-current-table {
-    min-width: 860px;
+    min-width: 1060px;
   }
 
   .dialog-actions {
