@@ -2627,3 +2627,64 @@ td em,
 .agent-identity-text small {
   font-weight: 450;
 }
+
+/* ---------- v2: draft-state refinements (Figma) ---------- */
+
+.status-badge.in-progress {
+  background: #eef0f3;
+  color: #4d5568;
+}
+
+.status-badge.response-received {
+  background: #e3edff;
+  color: #2855bf;
+}
+
+.status-dot.blue {
+  background: #3d7bfd;
+}
+
+.status-dot.purple {
+  background: #8c55d9;
+}
+
+.status-dot.gray {
+  background: #9aa0ab;
+}
+
+select.kpi-select {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 26px 0 10px;
+  border: 1px solid #d6d9df;
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.trash-button {
+  color: #d64545;
+}
+
+.trash-button:hover:not(:disabled) {
+  background: #fde9e9;
+  color: #b91c1c;
+  filter: none;
+}
+
+.trash-button:disabled {
+  color: #cbd0da;
+}
+
+.trash-button svg {
+  width: 17px;
+  height: 17px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

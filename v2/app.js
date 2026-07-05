@@ -8,14 +8,14 @@ const STATE_VERSION = 2;
 const responseOptions = [
   "I acknowledge",
   "Data is incorrect",
-  "Let's discuss this in detail",
+  "Need to discuss this further",
   "I need more support for this",
 ];
 
 const responseTypeMeta = [
   { key: "acknowledged", label: "Acknowledged", tone: "green", response: "I acknowledge" },
   { key: "incorrect", label: "Data incorrect", tone: "red", response: "Data is incorrect" },
-  { key: "discuss", label: "Discuss further", tone: "blue", response: "Let's discuss this in detail" },
+  { key: "discuss", label: "Discuss further", tone: "blue", response: "Need to discuss this further" },
   { key: "support", label: "Need support", tone: "purple", response: "I need more support for this" },
   { key: "noResponse", label: "No response", tone: "gray", response: "" },
 ];
@@ -50,6 +50,17 @@ const REPORT_ICONS = {
 };
 
 const LOWER_IS_BETTER_KPI = /aht|handling time|resolution time|escalation|backlog/i;
+
+// Standard KPI catalog offered in the draft-editing KPI dropdown; custom
+// entries added via "+ Add new..." are stored in state.customKpis.
+const KPI_BASE_CATALOG = [
+  "Overall Bills",
+  "Accuracy",
+  "AHT",
+  "Utilization %",
+  "Qualitative feedback",
+  "Process compliance metrics",
+];
 
 const seedMembers = [
   { id: "sarah", name: "Sarah Johnson", email: "sarah.johnson@company.com" },
@@ -242,7 +253,7 @@ const seedReviews = [
         "Overall Bills",
         { "2026-05": "1250" },
         "",
-        "Let's discuss this in detail",
+        "Need to discuss this further",
         "",
         "May 12, 5:30 AM",
       ),
@@ -253,7 +264,7 @@ const seedReviews = [
     feedback: [
       {
         from: "supervisor",
-        text: "May has been a mixed but generally positive month, Sarah. The system outage impacted billing volume — we've adjusted the target to reflect that. Quality and accuracy remain strong. The open discussion on the billing goal is appreciated; this is exactly the kind of proactive communication I want to encourage.",
+        text: "May has been a mixed but generally positive month, Sarah. The system outage impacted billing volume — we've adjusted the target to reflect that. Quality and accuracy remain strong. The open discussion on the billing target is appreciated; this is exactly the kind of proactive communication I want to encourage.",
         at: "May 13, 2026",
       },
       {
@@ -440,6 +451,7 @@ function createInitialState() {
     selectedAgentId: "sarah",
     selectedAgentPeriodKey: null,
     reportRange: null,
+    customKpis: [],
     members: structuredClone(seedMembers),
     reviews: structuredClone(seedReviews),
   });
@@ -483,7 +495,7 @@ function normalizeState(rawState) {
         kpi: item.kpi ?? "",
         data: item.data && typeof item.data === "object" ? item.data : {},
         comment: item.comment ?? "",
-        agentResponse: item.agentResponse ?? "",
+        agentResponse: normalizeAgentResponse(item.agentResponse),
         agentNote: item.agentNote ?? "",
         agentRespondedAt: item.agentRespondedAt ?? "",
       })),
@@ -508,6 +520,7 @@ function normalizeState(rawState) {
     selectedAgentId,
     selectedAgentPeriodKey: rawState.selectedAgentPeriodKey ?? null,
     reportRange: normalizeReportRange(rawState.reportRange),
+    customKpis: [...new Set((Array.isArray(rawState.customKpis) ? rawState.customKpis : []).map((kpi) => String(kpi).trim()).filter(Boolean))],
     members,
     reviews,
   };
@@ -522,6 +535,12 @@ function normalizeReportRange(raw) {
     from: raw?.from in MONTH_INDEX ? raw.from : months2026[0].key,
     to: raw?.to in MONTH_INDEX ? raw.to : months2026[months2026.length - 1].key,
   };
+}
+
+function normalizeAgentResponse(response) {
+  // Migrates the pre-rename option label kept in older saved states.
+  if (response === "Let's discuss this in detail") return "Need to discuss this further";
+  return response ?? "";
 }
 
 function normalizeFeedback(review) {
@@ -578,7 +597,9 @@ function periodLabelFromMonths(months) {
 
 function reviewTitlePeriod(review) {
   const first = monthByKey(review.months[0]);
-  return `${first.name} ${first.year}`;
+  const last = monthByKey(review.months[review.months.length - 1]);
+  if (first === last) return `${first.name} ${first.year}`;
+  return `${first.short} ${first.year} – ${last.short} ${last.year}`;
 }
 
 function memberById(id) {
@@ -621,25 +642,59 @@ function availableMonths() {
 function statusLabel(status, mode = "supervisor") {
   if (status === "closed") return "Closed";
   if (status === "awaiting") return mode === "agent" ? "Open" : "Awaiting Agent Response";
-  if (status === "awaiting-supervisor") return "Awaiting Supervisor Response";
+  if (status === "awaiting-supervisor") return mode === "agent" ? "Awaiting Supervisor Response" : "Agent Response Received";
   if (status === "reopened") return "Reopened";
-  return "In Progress";
+  return "Draft";
 }
 
 function statusBadgeClass(status, mode) {
-  return status === "awaiting" && mode === "agent" ? "open" : status;
+  if (status === "awaiting" && mode === "agent") return "open";
+  if (status === "awaiting-supervisor" && mode !== "agent") return "response-received";
+  return status;
 }
 
 function statusDotTone(status) {
-  return status === "closed" ? "green" : "amber";
+  if (status === "closed") return "green";
+  if (status === "awaiting-supervisor") return "blue";
+  if (status === "reopened") return "purple";
+  if (status === "in-progress") return "gray";
+  return "amber";
 }
 
 function responseToneMeta(response) {
   return responseTypeMeta.find((item) => item.response === response) ?? null;
 }
 
+// The agent can respond to items / final-acknowledge only while the review is
+// open with them. A reopened review sits with the supervisor until re-sent.
 function agentCanAct(review) {
-  return review.status === "awaiting" || review.status === "reopened";
+  return review.status === "awaiting";
+}
+
+function kpiCatalog() {
+  const set = new Set(KPI_BASE_CATALOG);
+  state.customKpis.forEach((kpi) => set.add(kpi));
+  state.reviews.forEach((review) =>
+    review.tasks.forEach((item) => {
+      const kpi = item.kpi.trim();
+      if (kpi) set.add(kpi);
+    }),
+  );
+  return [...set];
+}
+
+function kpiSelectHtml(item, index) {
+  const current = item.kpi.trim();
+  const options = kpiCatalog();
+  return `<select class="kpi-select" data-action="kpi-select" aria-label="KPI for focus area ${index + 1}">
+      <option value="" ${current ? "" : "selected"}>Select KPI...</option>
+      ${options
+        .map(
+          (kpi) => `<option value="${escapeHtml(kpi)}" ${kpi === current ? "selected" : ""}>${escapeHtml(kpi)}</option>`,
+        )
+        .join("")}
+      <option value="__add-new__">+ Add new...</option>
+    </select>`;
 }
 
 /* ---------- Rendering ---------- */
@@ -717,13 +772,20 @@ function renderNewPeriodControls() {
     const button = document.createElement("button");
     button.type = "button";
     const isSelected = draftMonths.has(month.key);
+    const atMax = !isSelected && draftMonths.size >= 3;
     button.className = `month-chip ${isSelected ? "selected" : ""}`;
     button.setAttribute("aria-pressed", String(isSelected));
+    button.disabled = atMax;
+    if (atMax) button.title = "A review period can cover at most 3 months";
     button.textContent = `${month.short} ${month.year}`;
     button.addEventListener("click", () => {
       if (draftMonths.has(month.key)) {
         draftMonths.delete(month.key);
       } else {
+        if (draftMonths.size >= 3) {
+          showToast("A review period can cover at most 3 consecutive months.");
+          return;
+        }
         draftMonths.add(month.key);
       }
       renderNewPeriodControls();
@@ -857,7 +919,9 @@ function renderReviewDetail(container, mode) {
 function renderReviewCard(container, review, mode) {
   const member = memberById(review.memberId);
   const isSupervisor = mode === "supervisor";
-  const editable = isSupervisor && review.status === "in-progress";
+  // Reopened reviews are editable again so the supervisor can update them
+  // before re-sending to the agent for a fresh acknowledgment.
+  const editable = isSupervisor && ["in-progress", "reopened"].includes(review.status);
 
   const controls = [];
   controls.push(
@@ -935,7 +999,7 @@ function renderReviewCard(container, review, mode) {
         editable
           ? `<div class="table-footer">
               <button class="primary-button" type="button" data-action="add-task">
-                <span aria-hidden="true">+</span> Add Task
+                <span aria-hidden="true">+</span> Add Focus Area
               </button>
             </div>`
           : ""
@@ -1058,7 +1122,7 @@ function finalAcknowledgmentHtml(review, mode) {
 function buildFooterRight(review, mode) {
   if (mode !== "supervisor") return "";
 
-  if (review.status === "in-progress") {
+  if (review.status === "in-progress" || review.status === "reopened") {
     return `<div class="footer-actions">
       <button class="primary-button" type="button" data-action="send-to-agent">Send to Agent</button>
     </div>`;
@@ -1066,7 +1130,7 @@ function buildFooterRight(review, mode) {
   if (review.status === "awaiting") {
     return `<span class="footer-status"><span aria-hidden="true">◷</span> Awaiting agent response</span>`;
   }
-  if (review.status === "awaiting-supervisor" || review.status === "reopened") {
+  if (review.status === "awaiting-supervisor") {
     return `<div class="footer-actions">
       <button class="primary-button" type="button" data-action="close-review">Close Review</button>
     </div>`;
@@ -1079,35 +1143,30 @@ function taskRowHtml(review, item, index, mode) {
     return agentTaskRowHtml(review, item, index);
   }
 
-  const editable = mode === "supervisor" && review.status === "in-progress";
+  const editable = mode === "supervisor" && ["in-progress", "reopened"].includes(review.status);
   const multiMonth = review.months.length > 1;
 
   const focusCell = editable
     ? `<textarea rows="1" class="goal-field" placeholder="Enter focus area..." aria-label="Focus area ${index + 1}">${escapeHtml(item.focusArea)}</textarea>`
     : item.focusArea
       ? `<span>${escapeHtml(item.focusArea)}</span>`
-      : `<em class="kpi-goal-label">KPI goal</em>`;
+      : `<em class="kpi-goal-label">KPI focus area</em>`;
 
   const timelineCell = editable
-    ? `<input class="timeline-field" value="${escapeHtml(item.timeline)}" placeholder="Timeline" aria-label="Timeline for task ${index + 1}" />`
+    ? `<input class="timeline-field" value="${escapeHtml(item.timeline)}" placeholder="Timeline" aria-label="Timeline for focus area ${index + 1}" />`
     : escapeHtml(item.timeline || "—");
 
-  const kpiCell = editable
-    ? `<input class="kpi-field" value="${escapeHtml(item.kpi)}" placeholder="KPI" aria-label="KPI for task ${index + 1}" />`
-    : escapeHtml(item.kpi);
+  const kpiCell = editable ? kpiSelectHtml(item, index) : escapeHtml(item.kpi);
 
   let dataCell;
-  if (editable) {
-    dataCell = `<div class="data-month-stack">${review.months
-      .map(
-        (key) => `
-          <label>
-            ${multiMonth ? `<span>${escapeHtml(monthByKey(key).short)}</span>` : ""}
-            <input class="data-field" data-month="${key}" value="${escapeHtml(item.data[key] ?? "")}" placeholder="Data" aria-label="${escapeHtml(monthByKey(key).short)} data for task ${index + 1}" />
-          </label>
-        `,
-      )
-      .join("")}</div>`;
+  if (editable && multiMonth) {
+    // Matches the draft design: multi-month data is explored via the trend
+    // popup (full KPI history) rather than edited inline.
+    dataCell = `<button class="trend-button" type="button" data-action="trend" data-task="${index}" aria-label="View ${escapeHtml(item.kpi || "KPI")} trend">
+        <span aria-hidden="true">↗</span> Trend
+      </button>`;
+  } else if (editable) {
+    dataCell = `<input class="data-field" data-month="${review.months[0]}" value="${escapeHtml(item.data[review.months[0]] ?? "")}" placeholder="Data" aria-label="Data for focus area ${index + 1}" />`;
   } else if (multiMonth) {
     dataCell = `<button class="trend-button" type="button" data-action="trend" data-task="${index}" aria-label="View ${escapeHtml(item.kpi || "KPI")} trend">
         <span aria-hidden="true">↗</span> Trend
@@ -1118,13 +1177,15 @@ function taskRowHtml(review, item, index, mode) {
   }
 
   const commentCell = editable
-    ? `<textarea rows="1" class="comment-field" placeholder="Add comment..." aria-label="Comment for task ${index + 1}">${escapeHtml(item.comment)}</textarea>`
+    ? `<textarea rows="1" class="comment-field" placeholder="Add comment..." aria-label="Comment for focus area ${index + 1}">${escapeHtml(item.comment)}</textarea>`
     : escapeHtml(item.comment);
 
   const responseCell = agentResponseCellHtml(review, item, mode);
 
   const actionCell = editable
-    ? `<button class="icon-button" type="button" title="Remove task" aria-label="Remove task ${index + 1}" data-action="remove-task" data-task="${index}" ${review.tasks.length === 1 ? "disabled" : ""}><span aria-hidden="true">×</span></button>`
+    ? `<button class="icon-button trash-button" type="button" title="Remove focus area" aria-label="Remove focus area ${index + 1}" data-action="remove-task" data-task="${index}" ${review.tasks.length === 1 ? "disabled" : ""}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>
+      </button>`
     : "";
 
   return `
@@ -1151,7 +1212,7 @@ function agentTaskRowHtml(review, item, index) {
 
   const focusCell = item.focusArea
     ? `<span>${escapeHtml(item.focusArea)}</span>`
-    : `<em class="kpi-goal-label">KPI goal</em>`;
+    : `<em class="kpi-goal-label">KPI focus area</em>`;
 
   const timelineCell = item.timeline ? escapeHtml(item.timeline) : `<em class="kpi-goal-label">Not set</em>`;
 
@@ -1233,8 +1294,11 @@ function feedbackSectionHtml(review, mode) {
   const member = memberById(review.memberId);
 
   // Supervisor can write until the review closes; the agent can write while
-  // the review is open (or reopened) for them. Closed reviews keep a frozen thread.
-  const canWrite = mode === "supervisor" ? review.status !== "closed" : agentCanAct(review);
+  // the review is open or under discussion. Closed reviews keep a frozen thread.
+  const canWrite =
+    mode === "supervisor"
+      ? review.status !== "closed"
+      : review.status === "awaiting" || review.status === "reopened";
   const composerOpen = canWrite && (messages.length > 0 || feedbackComposerReviewId === review.id);
 
   const thread = messages.length
@@ -1320,7 +1384,7 @@ function acknowledgementHtml(review, mode) {
 
 function bindReviewCard(container, review, mode) {
   const isSupervisor = mode === "supervisor";
-  const editable = isSupervisor && review.status === "in-progress";
+  const editable = isSupervisor && ["in-progress", "reopened"].includes(review.status);
 
   container.querySelector('[data-action="close-detail"]')?.addEventListener("click", () => {
     state.selectedPeriodKey = null;
@@ -1424,8 +1488,23 @@ function bindReviewCard(container, review, mode) {
       item.timeline = event.target.value;
       persistDraft();
     });
-    row.querySelector(".kpi-field")?.addEventListener("input", (event) => {
-      item.kpi = event.target.value;
+    row.querySelector(".kpi-select")?.addEventListener("change", (event) => {
+      const value = event.target.value;
+      if (value === "__add-new__") {
+        const name = (window.prompt("Name the new KPI / parameter:") ?? "").trim();
+        if (name) {
+          if (!state.customKpis.includes(name)) {
+            state.customKpis.push(name);
+          }
+          item.kpi = name;
+          persistDraft();
+          render();
+        } else {
+          event.target.value = item.kpi;
+        }
+        return;
+      }
+      item.kpi = value;
       persistDraft();
     });
     row.querySelectorAll(".data-field").forEach((input) => {
@@ -1476,6 +1555,10 @@ function startReview(monthKeys) {
     showToast("Select one or more consecutive months.");
     return;
   }
+  if (months.length > 3) {
+    showToast("A review period can cover at most 3 consecutive months.");
+    return;
+  }
 
   if (reviewFor(member.id, periodKeyOf(months))) {
     showToast(`${member.name} already has a ${periodLabelFromMonths(months)} review.`);
@@ -1514,16 +1597,18 @@ function startReview(monthKeys) {
 function sendToAgent(review) {
   const missingKpi = review.tasks.some((item) => !item.kpi.trim());
   if (!review.tasks.length || missingKpi) {
-    showToast("Every task needs a KPI before sending to the agent.");
+    showToast("Every focus area needs a KPI before sending to the agent.");
     return;
   }
 
   const member = memberById(review.memberId);
   review.status = "awaiting";
+  // Any prior acknowledgment is void once the review goes back to the agent.
+  review.acknowledgedAt = "";
   review.lastUpdated = formatTimestamp(new Date());
   persistDraft();
   render();
-  showToast(`Review sent to ${member.name}.`);
+  showToast(`Review sent to ${member.name} for acknowledgment.`);
 }
 
 function acknowledgeReview(review) {
@@ -1558,11 +1643,17 @@ function openTrendModal(review, taskIndex) {
   const member = memberById(review.memberId);
   if (!item || !member) return;
 
-  const points = review.months.map((key) => ({
-    month: monthByKey(key),
-    raw: (item.data[key] ?? "").trim(),
-    value: parseMetricNumber(item.data[key]),
-  }));
+  // Closed / sent reviews chart their own months; drafts chart the member's
+  // full history for that KPI so the popup helps while planning targets.
+  let points =
+    review.status === "in-progress" ? kpiHistoryPoints(review.memberId, item.kpi) : [];
+  if (!points.length) {
+    points = review.months.map((key) => ({
+      month: monthByKey(key),
+      raw: (item.data[key] ?? "").trim(),
+      value: parseMetricNumber(item.data[key]),
+    }));
+  }
   const numeric = points.filter((point) => point.value != null);
   const latest = numeric[numeric.length - 1] ?? null;
   const previous = numeric.length > 1 ? numeric[numeric.length - 2] : null;
@@ -1599,6 +1690,29 @@ function openTrendModal(review, taskIndex) {
   els.trendModal.classList.remove("hidden");
   renderTrendChart(points, average);
   els.closeTrendModal.focus();
+}
+
+function kpiHistoryPoints(memberId, kpi) {
+  const target = kpi.trim().toLowerCase();
+  if (!target) return [];
+
+  const byMonth = new Map();
+  state.reviews
+    .filter((review) => review.memberId === memberId)
+    .forEach((review) => {
+      const match = review.tasks.find((item) => item.kpi.trim().toLowerCase() === target);
+      if (!match) return;
+      review.months.forEach((key) => {
+        const raw = (match.data[key] ?? "").trim();
+        if (raw) byMonth.set(key, raw);
+      });
+    });
+
+  return sortMonthKeys([...byMonth.keys()]).map((key) => ({
+    month: monthByKey(key),
+    raw: byMonth.get(key),
+    value: parseMetricNumber(byMonth.get(key)),
+  }));
 }
 
 function closeTrendModal() {
@@ -1796,10 +1910,19 @@ function submitAgentResponse(event) {
   item.agentRespondedAt = formatResponseTime(new Date());
   review.lastUpdated = formatTimestamp(new Date());
 
+  // A discuss-further response routes the review straight back to the
+  // supervisor, who updates it and re-sends it for acknowledgment.
+  const routedForDiscussion = selectedResponse === "Need to discuss this further" && review.status === "awaiting";
+  if (routedForDiscussion) {
+    review.status = "reopened";
+  }
+
   persistDraft();
   closeResponseModal();
   render();
-  showToast("Response shared with supervisor.");
+  showToast(
+    routedForDiscussion ? "Routed back to your supervisor for discussion." : "Response shared with supervisor.",
+  );
 }
 
 function updateSubmitResponseState() {
@@ -1808,7 +1931,7 @@ function updateSubmitResponseState() {
 }
 
 function taskSummary(review, item) {
-  const title = item.focusArea.trim() || item.kpi.trim() || "Review task";
+  const title = item.focusArea.trim() || item.kpi.trim() || "Review focus area";
   const details = [];
   if (item.kpi.trim()) details.push(item.kpi.trim());
   const latestValue = item.data[review.months[review.months.length - 1]];
@@ -1976,7 +2099,7 @@ function reviewResponseCounts(review) {
       counts.acknowledged += 1;
     } else if (item.agentResponse === "Data is incorrect") {
       counts.incorrect += 1;
-    } else if (item.agentResponse === "Let's discuss this in detail") {
+    } else if (item.agentResponse === "Need to discuss this further") {
       counts.discuss += 1;
     } else if (item.agentResponse === "I need more support for this") {
       counts.support += 1;
@@ -2000,7 +2123,7 @@ function renderReportKpis(metrics) {
         </span>`,
     },
     { label: "Final Acknowledged", value: metrics.finalAcknowledged, tone: "indigo", icon: REPORT_ICONS.trend },
-    { label: "Goal Responses", value: metrics.goalResponses, tone: "purple", icon: REPORT_ICONS.chat },
+    { label: "Focus Area Responses", value: metrics.goalResponses, tone: "purple", icon: REPORT_ICONS.chat },
   ];
 
   els.reportKpis.innerHTML = cards
