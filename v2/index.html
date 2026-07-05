@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>One-on-One Review System</title>
+    <link rel="stylesheet" href="styles.css?v=v2-1" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="header-inner">
+        <h1>One-on-One Review System</h1>
+        <nav class="top-nav" aria-label="Primary">
+          <button class="nav-button active" type="button" aria-pressed="true" data-view="supervisor">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 20v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </span>
+            Supervisor
+          </button>
+          <button class="nav-button" type="button" aria-pressed="false" data-view="agent">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+                <path d="m16 11 2 2 4-4" />
+              </svg>
+            </span>
+            Agent
+          </button>
+          <button class="nav-button" type="button" aria-pressed="false" data-view="reports">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M3 3v18h18" />
+                <path d="M7 16V9" />
+                <path d="M12 16V5" />
+                <path d="M17 16v-3" />
+              </svg>
+            </span>
+            Reports
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="page-shell">
+      <section class="dashboard-head hidden" id="dashboardHead" aria-labelledby="dashboard-title">
+        <div>
+          <h2 id="dashboard-title">Agent Dashboard</h2>
+          <p class="dashboard-subtitle hidden" id="dashboardSubtitle">Senior Leadership Analytics — 2026</p>
+        </div>
+
+        <div class="report-range-controls reports-only hidden">
+          <div class="range-tabs" role="group" aria-label="Report range mode">
+            <button type="button" class="range-tab active" data-range-mode="monthly" aria-pressed="true">Monthly</button>
+            <button type="button" class="range-tab" data-range-mode="quarterly" aria-pressed="false">Quarterly</button>
+            <button type="button" class="range-tab" data-range-mode="custom" aria-pressed="false">Custom</button>
+          </div>
+          <label class="sr-only" for="reportMonthSelect">Month range</label>
+          <select id="reportMonthSelect" class="range-select">
+            <option value="all">All Months</option>
+          </select>
+          <label class="sr-only" for="reportQuarterSelect">Quarter</label>
+          <select id="reportQuarterSelect" class="range-select hidden"></select>
+          <span class="custom-range hidden" id="customRangeWrap">
+            From
+            <label class="sr-only" for="reportFromSelect">From month</label>
+            <select id="reportFromSelect" class="range-select small"></select>
+            to
+            <label class="sr-only" for="reportToSelect">To month</label>
+            <select id="reportToSelect" class="range-select small"></select>
+            <span class="custom-range-year">2026</span>
+          </span>
+        </div>
+      </section>
+
+      <section class="view-section" id="supervisorView">
+        <section class="member-select-card" aria-labelledby="member-select-title">
+          <h2 class="member-select-title" id="member-select-title">Select Team Member</h2>
+          <div class="member-chips" id="memberChips" role="group" aria-label="Team members"></div>
+        </section>
+
+        <div class="supervisor-layout">
+          <aside class="periods-panel" aria-labelledby="periods-title">
+            <h3 class="periods-heading" id="periods-title">Review Periods</h3>
+
+            <section class="new-period" aria-labelledby="new-period-title">
+              <h4 class="periods-subheading" id="new-period-title">New Review Period</h4>
+              <p class="periods-hint">Select one or more consecutive months</p>
+              <div class="month-chips" id="monthChips" role="group" aria-label="Available months"></div>
+              <p class="selected-months hidden" id="selectedMonthsLine"></p>
+              <button class="start-review-button" type="button" id="startReviewButton" disabled>
+                <span aria-hidden="true">+</span>
+                Start Review
+              </button>
+            </section>
+
+            <div class="period-list" id="periodList"></div>
+          </aside>
+
+          <section class="review-detail-panel" id="reviewDetailPanel" aria-live="polite"></section>
+        </div>
+      </section>
+
+      <section class="view-section hidden" id="agentView">
+        <div class="agent-toolbar">
+          <span class="toolbar-person" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </span>
+          <label class="sr-only" for="agentSelect">View as agent</label>
+          <select id="agentSelect" class="toolbar-select"></select>
+          <label class="sr-only" for="agentPeriodSelect">Review period</label>
+          <select id="agentPeriodSelect" class="toolbar-select wide"></select>
+          <span class="status-badge hidden" id="agentToolbarStatus"></span>
+          <div class="agent-identity">
+            <span class="toolbar-avatar" id="agentAvatar" aria-hidden="true">SJ</span>
+            <span class="agent-identity-text">
+              <strong id="agentName">Sarah Johnson</strong>
+              <small id="agentEmail">sarah.johnson@company.com</small>
+            </span>
+          </div>
+        </div>
+
+        <section class="review-detail-panel" id="agentReviewDetailPanel" aria-live="polite"></section>
+      </section>
+
+      <section class="reports-dashboard view-section hidden" id="reportsView">
+        <div class="report-kpis" id="reportKpis"></div>
+
+        <section class="report-card trend-card">
+          <h3 class="report-title">Monthly Review Status Trend</h3>
+          <div class="completion-chart" aria-label="Monthly review status trend">
+            <canvas id="completionChart"></canvas>
+          </div>
+        </section>
+
+        <section class="report-card">
+          <h3 class="report-title">Review Status by Month</h3>
+          <div class="report-table-wrap">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Closed</th>
+                  <th>Acknowledged</th>
+                  <th>In Discussion</th>
+                  <th>Submitted</th>
+                  <th>Draft</th>
+                  <th>Rate</th>
+                </tr>
+              </thead>
+              <tbody id="monthlyReportBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="report-card">
+          <h3 class="report-title">Agent Response Breakdown</h3>
+          <div class="report-table-wrap">
+            <table class="report-table agent-breakdown-table">
+              <thead>
+                <tr>
+                  <th>Agent</th>
+                  <th>Acknowledged</th>
+                  <th>Data Incorrect</th>
+                  <th>Discuss Further</th>
+                  <th>Need Support</th>
+                  <th>No Response</th>
+                  <th>Final Ack.</th>
+                </tr>
+              </thead>
+              <tbody id="agentBreakdownBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="report-card">
+          <h3 class="report-title">Response Type Summary (All Agents)</h3>
+          <div class="response-summary-row" id="responseSummaryCards"></div>
+        </section>
+
+        <section class="report-card">
+          <h3 class="report-title download-heading">
+            <span class="download-heading-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </span>
+            Download Reports
+          </h3>
+          <div class="download-grid">
+            <button class="download-card" type="button" data-report-download="monthly">
+              <span class="download-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </span>
+              <span>
+                <strong>Monthly Completion Report</strong>
+                <small>CSV format</small>
+              </span>
+            </button>
+            <button class="download-card" type="button" data-report-download="responses">
+              <span class="download-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </span>
+              <span>
+                <strong>Agent Response Data</strong>
+                <small>CSV format</small>
+              </span>
+            </button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <div class="modal-backdrop hidden" id="responseModal" role="dialog" aria-modal="true" aria-labelledby="responseModalTitle">
+      <form class="response-dialog" id="responseForm">
+        <div class="dialog-head">
+          <h2 id="responseModalTitle">Respond to Goal</h2>
+          <button class="close-button" type="button" id="closeResponseModal" aria-label="Close response dialog">×</button>
+        </div>
+
+        <p class="dialog-subtitle" id="responseGoalSummary">Select your response to this goal.</p>
+
+        <fieldset class="response-options">
+          <legend>Select your response</legend>
+          <label class="response-option">
+            <input type="radio" name="agentResponse" value="I acknowledge" />
+            <span>I acknowledge</span>
+          </label>
+          <label class="response-option">
+            <input type="radio" name="agentResponse" value="Data is incorrect" />
+            <span>Data is incorrect</span>
+          </label>
+          <label class="response-option">
+            <input type="radio" name="agentResponse" value="Let's discuss this in detail" />
+            <span>Let's discuss this in detail</span>
+          </label>
+          <label class="response-option">
+            <input type="radio" name="agentResponse" value="I need more support for this" />
+            <span>I need more support for this</span>
+          </label>
+        </fieldset>
+
+        <label class="response-note">
+          <span>Optional note</span>
+          <textarea id="responseNote" placeholder="Add context for your supervisor..."></textarea>
+        </label>
+
+        <div class="dialog-actions">
+          <button class="secondary-button" type="button" id="cancelResponse">Cancel</button>
+          <button class="primary-button" type="submit" id="submitResponse" disabled>Submit Response</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-backdrop hidden" id="trendModal" role="dialog" aria-modal="true" aria-labelledby="trendModalTitle">
+      <div class="trend-dialog">
+        <div class="trend-dialog-head">
+          <span class="trend-head-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <polyline points="3 16 9 10 13 14 21 6" />
+              <polyline points="14 6 21 6 21 13" />
+            </svg>
+          </span>
+          <div>
+            <h2 id="trendModalTitle">KPI Trend</h2>
+            <p id="trendModalSubtitle">Historical achievement</p>
+          </div>
+          <button class="close-button" type="button" id="closeTrendModal" aria-label="Close trend dialog">×</button>
+        </div>
+
+        <div class="trend-stats" id="trendStats"></div>
+        <div class="trend-chart-wrap">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <script src="chart.umd.min.js?v=4.4.9"></script>
+    <script src="app.js?v=v2-3"></script>
+  </body>
+</html>
