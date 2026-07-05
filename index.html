@@ -90,7 +90,7 @@
 
             <section class="new-period" aria-labelledby="new-period-title">
               <h4 class="periods-subheading" id="new-period-title">New Review Period</h4>
-              <p class="periods-hint">Select one or more consecutive months</p>
+              <p class="periods-hint">Select up to 3 consecutive months</p>
               <div class="month-chips" id="monthChips" role="group" aria-label="Available months"></div>
               <p class="selected-months hidden" id="selectedMonthsLine"></p>
               <button class="start-review-button" type="button" id="startReviewButton" disabled>
@@ -232,11 +232,11 @@
     <div class="modal-backdrop hidden" id="responseModal" role="dialog" aria-modal="true" aria-labelledby="responseModalTitle">
       <form class="response-dialog" id="responseForm">
         <div class="dialog-head">
-          <h2 id="responseModalTitle">Respond to Goal</h2>
+          <h2 id="responseModalTitle">Respond to Focus Area</h2>
           <button class="close-button" type="button" id="closeResponseModal" aria-label="Close response dialog">×</button>
         </div>
 
-        <p class="dialog-subtitle" id="responseGoalSummary">Select your response to this goal.</p>
+        <p class="dialog-subtitle" id="responseGoalSummary">Select your response to this focus area.</p>
 
         <fieldset class="response-options">
           <legend>Select your response</legend>
@@ -249,8 +249,8 @@
             <span>Data is incorrect</span>
           </label>
           <label class="response-option">
-            <input type="radio" name="agentResponse" value="Let's discuss this in detail" />
-            <span>Let's discuss this in detail</span>
+            <input type="radio" name="agentResponse" value="Need to discuss this further" />
+            <span>Need to discuss this further</span>
           </label>
           <label class="response-option">
             <input type="radio" name="agentResponse" value="I need more support for this" />
@@ -294,6 +294,6 @@
     </div>
 
     <script src="chart.umd.min.js?v=4.4.9"></script>
-    <script src="app.js?v=v2-4"></script>
+    <script src="app.js?v=v2-5"></script>
   </body>
 </html>
