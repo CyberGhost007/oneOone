@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>One-on-One Review System</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=v2-1" />
   </head>
   <body>
     <header class="app-header">
@@ -48,369 +48,175 @@
     </header>
 
     <main class="page-shell">
-      <section class="dashboard-head" aria-labelledby="dashboard-title">
+      <section class="dashboard-head hidden" id="dashboardHead" aria-labelledby="dashboard-title">
         <div>
-          <h2 id="dashboard-title">Supervisor Dashboard</h2>
-          <p class="dashboard-subtitle hidden" id="dashboardSubtitle">Senior Leadership Analytics - 2026</p>
-          <label class="period-control review-period-control">
-            <span>Review Period:</span>
-            <select id="periodSelect">
-              <option>May 2026</option>
-              <option>April 2026</option>
-              <option>March 2026</option>
-            </select>
-          </label>
+          <h2 id="dashboard-title">Agent Dashboard</h2>
+          <p class="dashboard-subtitle hidden" id="dashboardSubtitle">Senior Leadership Analytics — 2026</p>
         </div>
 
-        <div class="summary-cards supervisor-only" aria-label="Review summary">
-          <article class="summary-card">
-            <span class="summary-icon success" aria-hidden="true">✓</span>
-            <div>
-              <span class="summary-label">Completed</span>
-              <strong id="completedCount">1</strong>
-            </div>
-          </article>
-          <article class="summary-card">
-            <span class="summary-icon pending" aria-hidden="true">!</span>
-            <div>
-              <span class="summary-label">Pending</span>
-              <strong id="pendingCount">4</strong>
-            </div>
-          </article>
-        </div>
-
-        <label class="view-as-control agent-only">
-          <span>View as:</span>
-          <select id="agentSelect"></select>
-        </label>
-
-        <label class="view-as-control reports-only hidden">
-          <span>Range:</span>
-          <select id="reportMonthSelect">
-            <option value="all">All months</option>
-            <option value="May">May 2026</option>
-            <option value="April">April 2026</option>
-            <option value="March">March 2026</option>
-            <option value="February">February 2026</option>
-            <option value="January">January 2026</option>
+        <div class="report-range-controls reports-only hidden">
+          <div class="range-tabs" role="group" aria-label="Report range mode">
+            <button type="button" class="range-tab active" data-range-mode="monthly" aria-pressed="true">Monthly</button>
+            <button type="button" class="range-tab" data-range-mode="quarterly" aria-pressed="false">Quarterly</button>
+            <button type="button" class="range-tab" data-range-mode="custom" aria-pressed="false">Custom</button>
+          </div>
+          <label class="sr-only" for="reportMonthSelect">Month range</label>
+          <select id="reportMonthSelect" class="range-select">
+            <option value="all">All Months</option>
           </select>
-        </label>
-      </section>
-
-      <section class="notice supervisor-only" aria-live="polite">
-        <span class="notice-icon" aria-hidden="true">◷</span>
-        <div>
-          <h3>Pending Reviews</h3>
-          <p id="pendingMessage">
-            You have 4 one-on-one reviews pending for May 2026. Please complete them to maintain 100% coverage.
-          </p>
+          <label class="sr-only" for="reportQuarterSelect">Quarter</label>
+          <select id="reportQuarterSelect" class="range-select hidden"></select>
+          <span class="custom-range hidden" id="customRangeWrap">
+            From
+            <label class="sr-only" for="reportFromSelect">From month</label>
+            <select id="reportFromSelect" class="range-select small"></select>
+            to
+            <label class="sr-only" for="reportToSelect">To month</label>
+            <select id="reportToSelect" class="range-select small"></select>
+            <span class="custom-range-year">2026</span>
+          </span>
         </div>
       </section>
 
-      <section class="work-area view-section" id="supervisorView">
-        <aside class="team-panel" aria-labelledby="team-title">
-          <h3 id="team-title">Your Team</h3>
-          <div class="team-list" id="teamList"></div>
-        </aside>
-
-        <section class="review-panel" aria-live="polite">
-          <div class="review-topline">
-            <div>
-              <h2 id="reviewName">Michael Chen</h2>
-              <p id="reviewSubtitle">One-on-One Review - May 2026</p>
-            </div>
-            <div class="status-stack">
-              <span class="status-pill" id="reviewStatus">In Progress</span>
-            </div>
-          </div>
-
-          <section class="review-section" aria-labelledby="section-one-title">
-            <div class="section-copy">
-              <p class="section-kicker" id="section-one-title">Past Follow-Up</p>
-              <h3>Past review history</h3>
-              <p>
-                Review the commitments, goals, and agreed actions carried over from the last one-on-one meeting.
-              </p>
-            </div>
-
-            <div class="table-wrap">
-              <table class="history-table">
-                <thead>
-                  <tr>
-                    <th>Past goals and agreed actions <span>(from last meeting)</span></th>
-                    <th>KPI</th>
-                    <th>Latest data</th>
-                    <th>Status of the task</th>
-                    <th>Progress notes</th>
-                    <th>Previously agreed timeline</th>
-                  </tr>
-                </thead>
-                <tbody id="historyBody"></tbody>
-              </table>
-            </div>
-          </section>
-
-          <section class="review-section current-month" aria-labelledby="section-two-title">
-            <div class="section-copy">
-              <p class="section-kicker" id="section-two-title">Current Planning</p>
-              <h3>Current month goals</h3>
-              <p>
-                Add or refine the key focus areas for this month. These items become the next meeting's history.
-              </p>
-            </div>
-
-            <div class="table-wrap">
-              <table class="current-table">
-                <thead>
-                  <tr>
-                    <th>Goal / focus area <span>(based on goal sheet)</span></th>
-                    <th>Action Plan</th>
-                    <th>Timeline</th>
-                    <th>KPI</th>
-                    <th>Data</th>
-                    <th>Agent response</th>
-                    <th class="action-col"><span class="sr-only">Action</span></th>
-                  </tr>
-                </thead>
-                <tbody id="currentGoalsBody"></tbody>
-              </table>
-              <div class="table-footer">
-                <button class="primary-button" type="button" id="addGoalButton">
-                  <span aria-hidden="true">+</span>
-                  Add New Goal
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <section class="review-section assessment-section" aria-labelledby="section-three-title">
-            <div class="section-copy">
-              <p class="section-kicker" id="section-three-title">Overall Assessment</p>
-              <h3>Overall assessment / comment</h3>
-              <p>Add the final review summary, coaching note, or overall comment for this one-on-one.</p>
-            </div>
-
-            <textarea
-              class="overall-comment-field"
-              id="overallComment"
-              rows="4"
-              placeholder="Add overall assessment or comment..."
-              aria-label="Overall assessment or comment"
-            ></textarea>
-          </section>
-
-          <footer class="review-actions">
-            <p id="lastUpdated">Last updated: May 8, 2026 5:30 AM</p>
-            <div>
-              <button class="secondary-button" type="button" id="saveDraftButton">Save as Draft</button>
-              <button class="primary-button" type="button" id="completeReviewButton">Complete Review</button>
-            </div>
-          </footer>
+      <section class="view-section" id="supervisorView">
+        <section class="member-select-card" aria-labelledby="member-select-title">
+          <h2 class="member-select-title" id="member-select-title">Select Team Member</h2>
+          <div class="member-chips" id="memberChips" role="group" aria-label="Team members"></div>
         </section>
+
+        <div class="supervisor-layout">
+          <aside class="periods-panel" aria-labelledby="periods-title">
+            <h3 class="periods-heading" id="periods-title">Review Periods</h3>
+
+            <section class="new-period" aria-labelledby="new-period-title">
+              <h4 class="periods-subheading" id="new-period-title">New Review Period</h4>
+              <p class="periods-hint">Select one or more consecutive months</p>
+              <div class="month-chips" id="monthChips" role="group" aria-label="Available months"></div>
+              <p class="selected-months hidden" id="selectedMonthsLine"></p>
+              <button class="start-review-button" type="button" id="startReviewButton" disabled>
+                <span aria-hidden="true">+</span>
+                Start Review
+              </button>
+            </section>
+
+            <div class="period-list" id="periodList"></div>
+          </aside>
+
+          <section class="review-detail-panel" id="reviewDetailPanel" aria-live="polite"></section>
+        </div>
       </section>
 
-      <section class="agent-dashboard view-section hidden" id="agentView">
-        <article class="agent-profile-card">
-          <div class="agent-avatar" id="agentAvatar" aria-hidden="true">SJ</div>
-          <div>
-            <h2 id="agentName">Sarah Johnson</h2>
-            <p id="agentEmail">sarah.johnson@company.com</p>
+      <section class="view-section hidden" id="agentView">
+        <div class="agent-toolbar">
+          <span class="toolbar-person" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </span>
+          <label class="sr-only" for="agentSelect">View as agent</label>
+          <select id="agentSelect" class="toolbar-select"></select>
+          <label class="sr-only" for="agentPeriodSelect">Review period</label>
+          <select id="agentPeriodSelect" class="toolbar-select wide"></select>
+          <span class="status-badge hidden" id="agentToolbarStatus"></span>
+          <div class="agent-identity">
+            <span class="toolbar-avatar" id="agentAvatar" aria-hidden="true">SJ</span>
+            <span class="agent-identity-text">
+              <strong id="agentName">Sarah Johnson</strong>
+              <small id="agentEmail">sarah.johnson@company.com</small>
+            </span>
           </div>
-          <div class="agent-profile-stats" aria-label="Agent review summary">
-            <span id="agentProfileStatus">Completed</span>
-          </div>
-        </article>
+        </div>
 
-        <section class="review-panel agent-review-panel" aria-live="polite">
-          <div class="review-topline">
-            <div>
-              <h2 id="agentReviewTitle">One-on-One Review - May 2026</h2>
-              <p id="agentReviewSubtitle">Shared supervisor and agent view</p>
-            </div>
-            <div class="status-stack">
-              <span class="status-pill" id="agentReviewStatus">Completed</span>
-            </div>
-          </div>
-
-          <section class="review-section" aria-labelledby="agent-section-one-title">
-            <div class="section-copy">
-              <p class="section-kicker" id="agent-section-one-title">Past Follow-Up</p>
-              <h3>Past review history</h3>
-              <p>Review the commitments and supervisor updates carried over from the last one-on-one meeting.</p>
-            </div>
-
-            <div class="table-wrap">
-              <table class="agent-history-table">
-                <thead>
-                  <tr>
-                    <th>Past goals and agreed actions <span>(from last meeting)</span></th>
-                    <th>KPI</th>
-                    <th>Latest data</th>
-                    <th>Supervisor status</th>
-                    <th>Supervisor comment</th>
-                    <th>Timeline</th>
-                  </tr>
-                </thead>
-                <tbody id="agentHistoryBody"></tbody>
-              </table>
-            </div>
-          </section>
-
-          <section class="review-section current-month" aria-labelledby="agent-section-two-title">
-            <div class="section-copy">
-              <p class="section-kicker" id="agent-section-two-title">My Responses</p>
-              <h3>Current month goals</h3>
-              <p>Review this month's focus areas and respond before the one-on-one meeting.</p>
-            </div>
-
-            <div class="table-wrap">
-              <table class="agent-current-table">
-                <thead>
-                  <tr>
-                    <th>Goal / focus area</th>
-                    <th>Action Plan</th>
-                    <th>Timeline</th>
-                    <th>KPI</th>
-                    <th>Data</th>
-                    <th>My response</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody id="agentCurrentGoalsBody"></tbody>
-              </table>
-            </div>
-          </section>
-
-          <section class="review-section assessment-section" aria-labelledby="agent-section-three-title">
-            <div class="section-copy">
-              <p class="section-kicker" id="agent-section-three-title">Overall Assessment</p>
-              <h3>Overall assessment / comment</h3>
-              <p>Read the supervisor's overall summary for this one-on-one.</p>
-            </div>
-
-            <div class="overall-comment-readonly" id="agentOverallComment">No overall comment yet.</div>
-          </section>
-
-          <footer class="review-actions agent-actions">
-            <p id="agentLastUpdated">Last updated: May 10, 2026 5:30 AM</p>
-          </footer>
-        </section>
+        <section class="review-detail-panel" id="agentReviewDetailPanel" aria-live="polite"></section>
       </section>
 
       <section class="reports-dashboard view-section hidden" id="reportsView">
         <div class="report-kpis" id="reportKpis"></div>
 
         <section class="report-card trend-card">
-          <div class="report-card-head">
-            <div>
-              <h3>Monthly Review Completion Trend</h3>
-              <p>Completed and pending one-on-one reviews across 2026.</p>
-            </div>
-            <div class="chart-legend">
-              <span><i class="legend-dot completed-dot"></i>Completed</span>
-              <span><i class="legend-dot pending-dot"></i>Pending</span>
-            </div>
-          </div>
-          <div class="completion-chart" aria-label="Monthly completion trend">
+          <h3 class="report-title">Monthly Review Status Trend</h3>
+          <div class="completion-chart" aria-label="Monthly review status trend">
             <canvas id="completionChart"></canvas>
           </div>
         </section>
 
-        <section class="report-grid">
-          <article class="report-card">
-            <div class="report-card-head">
-              <div>
-                <h3>Supervisor Completion by Month</h3>
-                <p>Monthly coverage and completion rate.</p>
-              </div>
-            </div>
-            <div class="report-table-wrap">
-              <table class="report-table">
-                <thead>
-                  <tr>
-                    <th>Month</th>
-                    <th>Completed</th>
-                    <th>Pending</th>
-                    <th>Total</th>
-                    <th>Rate</th>
-                  </tr>
-                </thead>
-                <tbody id="monthlyReportBody"></tbody>
-              </table>
-            </div>
-          </article>
-
-          <article class="report-card">
-            <div class="report-card-head">
-              <div>
-                <h3>Response Type Summary</h3>
-                <p>How agents are reacting to current and historical goals.</p>
-              </div>
-            </div>
-            <div class="response-summary-grid" id="responseSummaryCards"></div>
-          </article>
-        </section>
-
-        <section class="report-grid">
-          <article class="report-card">
-            <div class="report-card-head">
-              <div>
-                <h3>Agent Response Breakdown</h3>
-                <p>Response mix by agent for leadership follow-up.</p>
-              </div>
-            </div>
-            <div class="breakdown-chart">
-              <canvas id="agentResponseChart"></canvas>
-            </div>
-            <details class="report-details">
-              <summary>View exact values</summary>
-              <div class="report-table-wrap">
-                <table class="report-table agent-breakdown-table">
-                  <thead>
-                    <tr>
-                      <th>Agent</th>
-                      <th>Acknowledged</th>
-                      <th>Data incorrect</th>
-                      <th>Discuss further</th>
-                      <th>Need support</th>
-                      <th>No response</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody id="agentBreakdownBody"></tbody>
-                </table>
-              </div>
-            </details>
-          </article>
-
-          <article class="report-card">
-            <div class="report-card-head">
-              <div>
-                <h3>Needs Attention</h3>
-                <p>Open reviews and agent signals that may need a supervisor follow-up.</p>
-              </div>
-            </div>
-            <div class="attention-list" id="attentionList"></div>
-          </article>
+        <section class="report-card">
+          <h3 class="report-title">Review Status by Month</h3>
+          <div class="report-table-wrap">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Closed</th>
+                  <th>Acknowledged</th>
+                  <th>In Discussion</th>
+                  <th>Submitted</th>
+                  <th>Draft</th>
+                  <th>Rate</th>
+                </tr>
+              </thead>
+              <tbody id="monthlyReportBody"></tbody>
+            </table>
+          </div>
         </section>
 
         <section class="report-card">
-          <div class="report-card-head">
-            <div>
-              <h3>Download Reports</h3>
-              <p>Export the current report view as CSV.</p>
-            </div>
+          <h3 class="report-title">Agent Response Breakdown</h3>
+          <div class="report-table-wrap">
+            <table class="report-table agent-breakdown-table">
+              <thead>
+                <tr>
+                  <th>Agent</th>
+                  <th>Acknowledged</th>
+                  <th>Data Incorrect</th>
+                  <th>Discuss Further</th>
+                  <th>Need Support</th>
+                  <th>No Response</th>
+                  <th>Final Ack.</th>
+                </tr>
+              </thead>
+              <tbody id="agentBreakdownBody"></tbody>
+            </table>
           </div>
+        </section>
+
+        <section class="report-card">
+          <h3 class="report-title">Response Type Summary (All Agents)</h3>
+          <div class="response-summary-row" id="responseSummaryCards"></div>
+        </section>
+
+        <section class="report-card">
+          <h3 class="report-title download-heading">
+            <span class="download-heading-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </span>
+            Download Reports
+          </h3>
           <div class="download-grid">
             <button class="download-card" type="button" data-report-download="monthly">
-              <span class="download-icon" aria-hidden="true">↓</span>
+              <span class="download-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </span>
               <span>
                 <strong>Monthly Completion Report</strong>
                 <small>CSV format</small>
               </span>
             </button>
             <button class="download-card" type="button" data-report-download="responses">
-              <span class="download-icon" aria-hidden="true">↓</span>
+              <span class="download-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </span>
               <span>
                 <strong>Agent Response Data</strong>
                 <small>CSV format</small>
@@ -464,7 +270,30 @@
       </form>
     </div>
 
+    <div class="modal-backdrop hidden" id="trendModal" role="dialog" aria-modal="true" aria-labelledby="trendModalTitle">
+      <div class="trend-dialog">
+        <div class="trend-dialog-head">
+          <span class="trend-head-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <polyline points="3 16 9 10 13 14 21 6" />
+              <polyline points="14 6 21 6 21 13" />
+            </svg>
+          </span>
+          <div>
+            <h2 id="trendModalTitle">KPI Trend</h2>
+            <p id="trendModalSubtitle">Historical achievement</p>
+          </div>
+          <button class="close-button" type="button" id="closeTrendModal" aria-label="Close trend dialog">×</button>
+        </div>
+
+        <div class="trend-stats" id="trendStats"></div>
+        <div class="trend-chart-wrap">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+    </div>
+
     <script src="chart.umd.min.js?v=4.4.9"></script>
-    <script src="app.js?v=chartjs-1"></script>
+    <script src="app.js?v=v2-3"></script>
   </body>
 </html>
