@@ -219,7 +219,7 @@ const seedReviews = [
     id: "sarah_2026-05",
     memberId: "sarah",
     months: ["2026-05"],
-    status: "awaiting-supervisor",
+    status: "closed",
     history: [
       {
         focusArea: "Improve ticket resolution time by 15%",
@@ -390,6 +390,7 @@ let trendChart = null;
 
 const els = {
   navButtons: document.querySelectorAll(".nav-button"),
+  refreshButton: document.querySelector("#refreshAppButton"),
   dashboardHead: document.querySelector("#dashboardHead"),
   dashboardTitle: document.querySelector("#dashboard-title"),
   dashboardSubtitle: document.querySelector("#dashboardSubtitle"),
@@ -478,9 +479,7 @@ function normalizeState(rawState) {
       id: review.id,
       memberId: review.memberId,
       months: (review.months ?? []).filter((key) => key in MONTH_INDEX),
-      status: ["in-progress", "awaiting", "awaiting-supervisor", "reopened", "closed"].includes(review.status)
-        ? review.status
-        : "in-progress",
+      status: normalizeStatus(review.status),
       history: (Array.isArray(review.history) ? review.history : []).map((item) => ({
         focusArea: item.focusArea ?? "",
         kpi: item.kpi ?? "",
@@ -535,6 +534,14 @@ function normalizeReportRange(raw) {
     from: raw?.from in MONTH_INDEX ? raw.from : months2026[0].key,
     to: raw?.to in MONTH_INDEX ? raw.to : months2026[months2026.length - 1].key,
   };
+}
+
+// The agent's final acknowledgment closes a review directly, so the old
+// "awaiting-supervisor" (acknowledged, waiting on a supervisor close) state
+// from earlier saved drafts collapses into "closed".
+function normalizeStatus(status) {
+  if (status === "awaiting-supervisor") return "closed";
+  return ["in-progress", "awaiting", "reopened", "closed"].includes(status) ? status : "in-progress";
 }
 
 function normalizeAgentResponse(response) {
@@ -1130,11 +1137,6 @@ function buildFooterRight(review, mode) {
   if (review.status === "awaiting") {
     return `<span class="footer-status"><span aria-hidden="true">◷</span> Awaiting agent response</span>`;
   }
-  if (review.status === "awaiting-supervisor") {
-    return `<div class="footer-actions">
-      <button class="primary-button" type="button" data-action="close-review">Close Review</button>
-    </div>`;
-  }
   return "";
 }
 
@@ -1402,7 +1404,6 @@ function bindReviewCard(container, review, mode) {
   });
 
   container.querySelector('[data-action="send-to-agent"]')?.addEventListener("click", () => sendToAgent(review));
-  container.querySelector('[data-action="close-review"]')?.addEventListener("click", () => closeReview(review));
   container.querySelector('[data-action="reopen"]')?.addEventListener("click", () => reopenReview(review));
   container.querySelector('[data-action="add-task"]')?.addEventListener("click", () => {
     review.tasks.push(task("", "", "", {}));
@@ -1460,7 +1461,6 @@ function bindReviewCard(container, review, mode) {
       persistDraft();
       render();
       container.querySelector('[data-action="feedback-draft"]')?.focus();
-      showToast(mode === "supervisor" ? "Assessment sent to agent." : "Reply sent to supervisor.");
     });
 
     container.querySelector('[data-action="feedback-cancel"]')?.addEventListener("click", () => {
@@ -1611,21 +1611,15 @@ function sendToAgent(review) {
   showToast(`Review sent to ${member.name} for acknowledgment.`);
 }
 
+// The agent's final acknowledgment is the closing step — there is no
+// separate supervisor close.
 function acknowledgeReview(review) {
-  review.status = "awaiting-supervisor";
+  review.status = "closed";
   review.acknowledgedAt = formatLongDate(new Date());
   review.lastUpdated = formatTimestamp(new Date());
   persistDraft();
   render();
-  showToast("Acknowledgment submitted to your supervisor.");
-}
-
-function closeReview(review) {
-  review.status = "closed";
-  review.lastUpdated = formatTimestamp(new Date());
-  persistDraft();
-  render();
-  showToast("Review closed.");
+  showToast("Review acknowledged and closed.");
 }
 
 function reopenReview(review) {
@@ -2505,6 +2499,20 @@ els.navButtons.forEach((button) => {
 });
 
 els.startReviewButton.addEventListener("click", () => startReview([...draftMonths]));
+
+// Demo reset: drop the saved draft and return the app to the seed data.
+// persistDraft() afterwards pushes the reset to any other open windows too.
+els.refreshButton.addEventListener("click", () => {
+  localStorage.removeItem(draftKey);
+  draftMonths.clear();
+  feedbackDrafts.clear();
+  feedbackComposerReviewId = null;
+  closeResponseModal();
+  closeTrendModal();
+  state = createInitialState();
+  persistDraft();
+  render();
+});
 
 els.agentSelect.addEventListener("change", (event) => {
   state.selectedAgentId = event.target.value;
