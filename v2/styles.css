@@ -2302,9 +2302,26 @@ textarea.comment-field {
   flex-wrap: wrap;
 }
 
-.ack-footer > span {
+.ack-footer-status {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ack-footer-status > span {
   color: #6a7080;
   font-size: 14px;
+  font-weight: 500;
+}
+
+.ack-outcome-hint {
+  color: #8a90a0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ack-outcome-hint.discuss {
+  color: #2855bf;
   font-weight: 500;
 }
 
