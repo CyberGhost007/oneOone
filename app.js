@@ -536,9 +536,9 @@ function normalizeReportRange(raw) {
   };
 }
 
-// The agent's final acknowledgment closes a review directly, so the old
-// "awaiting-supervisor" (acknowledged, waiting on a supervisor close) state
-// from earlier saved drafts collapses into "closed".
+// An agent submit with no discuss-further responses closes a review directly,
+// so the old "awaiting-supervisor" (acknowledged, waiting on a supervisor
+// close) state from earlier saved drafts collapses into "closed".
 function normalizeStatus(status) {
   if (status === "awaiting-supervisor") return "closed";
   return ["in-progress", "awaiting", "reopened", "closed"].includes(status) ? status : "in-progress";
@@ -672,10 +672,16 @@ function responseToneMeta(response) {
   return responseTypeMeta.find((item) => item.response === response) ?? null;
 }
 
-// The agent can respond to items / final-acknowledge only while the review is
-// open with them. A reopened review sits with the supervisor until re-sent.
+// The agent can respond to items / submit only while the review is open with
+// them. A reopened review sits with the supervisor until re-sent.
 function agentCanAct(review) {
   return review.status === "awaiting";
+}
+
+// Any discuss-further item response routes the whole review back to the
+// supervisor when the agent submits; otherwise submit acknowledges and closes.
+function reviewNeedsDiscussion(review) {
+  return review.tasks.some((item) => item.agentResponse === "Need to discuss this further");
 }
 
 function kpiCatalog() {
@@ -1099,26 +1105,34 @@ function finalAcknowledgmentHtml(review, mode) {
           <span aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
           </span>
-          <span>You have not responded to all items yet. You can still submit your acknowledgment, but it is recommended to respond to each item first.</span>
+          <span>You have not responded to all items yet. You can still submit, but it is recommended to respond to each item first.</span>
         </div>`
       : "";
 
+  const needsDiscussion = reviewNeedsDiscussion(review);
+  const outcomeHint = needsDiscussion
+    ? "Submitting will route this review back to your supervisor for discussion."
+    : "Submitting will acknowledge and close this review.";
+
   return `
-    <section class="final-ack-section" aria-label="Final acknowledgment">
+    <section class="final-ack-section" aria-label="Review summary and submission">
       <div class="final-ack-head">
-        <h3>Final Acknowledgment</h3>
-        <p>Review your responses, then submit your overall acknowledgment for this review.</p>
+        <h3>Summary</h3>
+        <p>Review your responses to each item, then submit this review.</p>
       </div>
       <div class="final-ack-body">
         <div class="ack-items">${items}</div>
         ${warning}
         <div class="ack-footer">
-          <span>${responded} of ${total} item${total === 1 ? "" : "s"} responded</span>
-          <button class="acknowledge-button" type="button" data-action="acknowledge">
+          <div class="ack-footer-status">
+            <span>${responded} of ${total} item${total === 1 ? "" : "s"} responded</span>
+            <small class="ack-outcome-hint${needsDiscussion ? " discuss" : ""}">${outcomeHint}</small>
+          </div>
+          <button class="acknowledge-button" type="button" data-action="submit-review">
             <span aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" /></svg>
+              <svg viewBox="0 0 24 24"><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4z" /></svg>
             </span>
-            I Acknowledge
+            Submit
           </button>
         </div>
       </div>
@@ -1413,7 +1427,7 @@ function bindReviewCard(container, review, mode) {
     container.querySelector("tbody tr:last-child .goal-field")?.focus();
   });
 
-  container.querySelector('[data-action="acknowledge"]')?.addEventListener("click", () => acknowledgeReview(review));
+  container.querySelector('[data-action="submit-review"]')?.addEventListener("click", () => submitAgentReview(review));
 
   container.querySelectorAll('[data-action="trend"]').forEach((button) => {
     button.addEventListener("click", () => openTrendModal(review, Number(button.dataset.task)));
@@ -1611,15 +1625,25 @@ function sendToAgent(review) {
   showToast(`Review sent to ${member.name} for acknowledgment.`);
 }
 
-// The agent's final acknowledgment is the closing step — there is no
-// separate supervisor close.
-function acknowledgeReview(review) {
-  review.status = "closed";
-  review.acknowledgedAt = formatLongDate(new Date());
+// Submitting is the agent's single closing step: with any discuss-further
+// response the review routes back to the supervisor, otherwise it is
+// acknowledged and closed — there is no separate supervisor close.
+function submitAgentReview(review) {
+  const needsDiscussion = reviewNeedsDiscussion(review);
+  if (needsDiscussion) {
+    review.status = "reopened";
+  } else {
+    review.status = "closed";
+    review.acknowledgedAt = formatLongDate(new Date());
+  }
   review.lastUpdated = formatTimestamp(new Date());
   persistDraft();
   render();
-  showToast("Review acknowledged and closed.");
+  showToast(
+    needsDiscussion
+      ? "Review submitted — routed back to your supervisor for discussion."
+      : "Review submitted — acknowledged and closed.",
+  );
 }
 
 function reopenReview(review) {
@@ -1904,19 +1928,13 @@ function submitAgentResponse(event) {
   item.agentRespondedAt = formatResponseTime(new Date());
   review.lastUpdated = formatTimestamp(new Date());
 
-  // A discuss-further response routes the review straight back to the
-  // supervisor, who updates it and re-sends it for acknowledgment.
-  const routedForDiscussion = selectedResponse === "Need to discuss this further" && review.status === "awaiting";
-  if (routedForDiscussion) {
-    review.status = "reopened";
-  }
-
+  // Item responses never route the review on their own — even a discuss-further
+  // pick keeps the review open so the agent can respond to every item. Routing
+  // happens once, on final submit.
   persistDraft();
   closeResponseModal();
   render();
-  showToast(
-    routedForDiscussion ? "Routed back to your supervisor for discussion." : "Response shared with supervisor.",
-  );
+  showToast("Response recorded.");
 }
 
 function updateSubmitResponseState() {
